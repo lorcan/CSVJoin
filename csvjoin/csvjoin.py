@@ -15,6 +15,7 @@ parser.add_argument("firstfile", help="This is the first CSV file.")
 parser.add_argument("secondfile", help="This is the second CSV file.")
 parser.add_argument("firstkey", help="This is the name of the header from the first file used for the join")
 parser.add_argument("secondkey", help="This is the name of the header from the second file used for the join")
+parser.add_argument("--keepsecondkey", help="Retain the second key rather than the first.", action="store_true")
 parser.add_argument("--firstprefix", default="", help="This is prefix to be used for headers in the first file.")
 parser.add_argument("--secondprefix", default="", help="This is prefix to be used for headers in the second file.")
 parser.add_argument("outputfile", help="This is the output file, where the joined file will be stored.")
@@ -50,11 +51,13 @@ with open(args.firstfile, 'r') as csvfile:
         sys.exit()
       joinColumnNumber = firstheader.index(args.firstkey)
       for h in firstheader:
-        outputheader.append(h)
+        if not (args.keepsecondkey and h == args.firstkey):
+          outputheader.append(h)
     else:
       joinKey = row[joinColumnNumber]
-      for entry in row:
-        r.lpush(joinKey, '' + entry)
+      for i in range(len(row)):
+        if not (args.keepsecondkey and i == joinColumnNumber):
+          r.lpush(joinKey, '' + row[i])
     
 outputfile = csv.writer(open(args.outputfile, 'w'))
 
@@ -72,7 +75,8 @@ with open(args.secondfile, 'r') as csvfile:
         sys.exit()
       joinColumnNumber = secondheader.index(args.secondkey)
       for h in secondheader:
-        outputheader.append(args.secondprefix + h)      
+        if args.keepsecondkey or h != args.secondkey:
+          outputheader.append(args.secondprefix + h)      
       if(not checkAllUnique(outputheader)):
         print "There are duplicate headers in the output. This won't do. Set a prefix to avoid this. Exiting."
       outputfile.writerow(outputheader)
@@ -83,8 +87,9 @@ with open(args.secondfile, 'r') as csvfile:
         while r.llen(secondFileKey) > 0:
           firstFileEntry = r.rpop(secondFileKey)
           outputRow.append(firstFileEntry)
-        for entry in row:
-          outputRow.append(entry)
+        for i in range(len(row)):
+          if(args.keepsecondkey or i != joinColumnNumber):
+            outputRow.append(row[i])
         outputfile.writerow(outputRow)
         joinCount = joinCount + 1
       
