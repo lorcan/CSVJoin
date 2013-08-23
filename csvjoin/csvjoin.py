@@ -1,6 +1,6 @@
 """
   csvjoin.py
-  Copyright (C) 2013 Lorcan Coyle, http://lorcancoyle.org
+  Copyright (c) 2013 Lorcan Coyle, http://lorcancoyle.org
   License:       MIT License
   Documentation: https://github.com/lorcan/CSVJoin
 """
@@ -49,12 +49,10 @@ with open(args.firstfile, 'r') as csvfile:
         print "There is no column called " + args.firstkey + " in the first files's header " + str(firstheader) + ". Unable to join. Exiting."
         sys.exit()
       joinColumnNumber = firstheader.index(args.firstkey)
-      print "Join header is " + args.firstkey + " and joinColumnNumber is " + str(joinColumnNumber)
       for h in firstheader:
         outputheader.append(h)
     else:
       joinKey = row[joinColumnNumber]
-      #row.pop(joinColumnNumber)
       for entry in row:
         r.lpush(joinKey, '' + entry)
     
@@ -85,7 +83,6 @@ with open(args.secondfile, 'r') as csvfile:
         while r.llen(secondFileKey) > 0:
           firstFileEntry = r.rpop(secondFileKey)
           outputRow.append(firstFileEntry)
-        print row
         for entry in row:
           outputRow.append(entry)
         outputfile.writerow(outputRow)
