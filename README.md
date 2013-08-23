@@ -4,11 +4,9 @@ CSVJoin
 Simple utility for joining CSV files
 
 ## Usage
+To get the usage pass `--help` on the command line.
 ```
-$ python csvjoin/csvjoin.py 
-usage: csvjoin.py [-h] [--firstprefix FIRSTPREFIX]
-                  [--secondprefix SECONDPREFIX]
-                  firstfile secondfile firstkey secondkey outputfile
+$ python csvjoin/csvjoin.py --help
 ```
 
 ## Requirements
