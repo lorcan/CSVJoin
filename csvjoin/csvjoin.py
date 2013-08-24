@@ -8,7 +8,6 @@ import argparse
 import csv
 import redis
 import sys
-import copy
 
 parser = argparse.ArgumentParser(description='Takes two CSV files and attempts to join them based on the key values. The headers from the first file will be retained unchanged but those from the second will be prefixed with the specified prefix value')
 parser.add_argument("firstfile", help="This is the first CSV file.")
@@ -21,16 +20,6 @@ parser.add_argument("--secondprefix", default="", help="This is prefix to be use
 parser.add_argument("outputfile", help="This is the output file, where the joined file will be stored.")
 
 args = parser.parse_args()
-
-def checkAllUnique(array):
-  sortedCopy = copy.copy(array)
-  sortedCopy.sort()
-  lastItem = None
-  for item in sortedCopy:
-    if(lastItem is not None and lastItem == item):
-      return False
-    lastItem = item
-  return True
 
 r = redis.StrictRedis(host='localhost', port=6379, db=0)
 # Defensive Flush
@@ -77,8 +66,10 @@ with open(args.secondfile, 'r') as csvfile:
       for h in secondheader:
         if args.keepsecondkey or h != args.secondkey:
           outputheader.append(args.secondprefix + h)      
-      if(not checkAllUnique(outputheader)):
-        print "There are duplicate headers in the output. This won't do. Set a prefix to avoid this. Exiting."
+      if(len(set(outputheader)) != len(outputheader):
+        duplicates = list(set([x for x in outputheader if outputheader.count(x) > 1]))
+        print "There are duplicate headers " + str(duplicates) + " in the output. This won't do. Set a prefix to avoid this. Exiting."
+        sys.exit()
       outputfile.writerow(outputheader)
     else:
       secondFileKey = row[joinColumnNumber]
