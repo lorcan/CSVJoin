@@ -66,7 +66,7 @@ with open(args.secondfile, 'r') as csvfile:
       for h in secondheader:
         if args.keepsecondkey or h != args.secondkey:
           outputheader.append(args.secondprefix + h)      
-      if(len(set(outputheader)) != len(outputheader):
+      if(len(set(outputheader)) != len(outputheader)):
         duplicates = list(set([x for x in outputheader if outputheader.count(x) > 1]))
         print "There are duplicate headers " + str(duplicates) + " in the output. This won't do. Set a prefix to avoid this. Exiting."
         sys.exit()
