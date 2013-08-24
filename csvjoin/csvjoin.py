@@ -52,7 +52,7 @@ with open(args.firstfile, 'r') as csvfile:
       joinColumnNumber = firstheader.index(args.firstkey)
       for h in firstheader:
         if not (args.keepsecondkey and h == args.firstkey):
-          outputheader.append(h)
+          outputheader.append(args.firstprefix + h)
     else:
       joinKey = row[joinColumnNumber]
       for i in range(len(row)):
