@@ -8,6 +8,7 @@ import argparse
 import csv
 import redis
 import sys
+import ast
 
 parser = argparse.ArgumentParser(description='Takes two CSV files and attempts to join them based on the key values. The headers from the first file will be retained unchanged but those from the second will be prefixed with the specified prefix value')
 parser.add_argument("firstfile", help="This is the first CSV file.")
@@ -44,10 +45,11 @@ with open(args.firstfile, 'r') as csvfile:
           outputheader.append(args.firstprefix + h)
     else:
       joinKey = row[joinColumnNumber]
+      firstJoin = []
       for i in range(len(row)):
         if not (args.keepsecondkey and i == joinColumnNumber):
-          r.lpush(joinKey, '' + row[i])
-    
+          firstJoin.append(joinKey, '' + row[i])
+      r.set(joinKey, str(firstJoin))
 outputfile = csv.writer(open(args.outputfile, 'w'))
 
 joinCount = 0
@@ -74,10 +76,7 @@ with open(args.secondfile, 'r') as csvfile:
     else:
       secondFileKey = row[joinColumnNumber]
       if(r.exists(secondFileKey)):
-        outputRow = []
-        while r.llen(secondFileKey) > 0:
-          firstFileEntry = r.rpop(secondFileKey)
-          outputRow.append(firstFileEntry)
+        outputRow = ast.literal_eval(r.get(secondFileKey))
         for i in range(len(row)):
           if(args.keepsecondkey or i != joinColumnNumber):
             outputRow.append(row[i])
