@@ -9,6 +9,7 @@ import csv
 import redis
 import sys
 import ast
+import copy
 
 parser = argparse.ArgumentParser(description='Takes two CSV files and attempts to join them based on the key values. The headers from the first file will be retained unchanged but those from the second will be prefixed with the specified prefix value')
 parser.add_argument("firstfile", help="This is the first CSV file.")
@@ -16,6 +17,7 @@ parser.add_argument("secondfile", help="This is the second CSV file.")
 parser.add_argument("firstkey", help="This is the name of the header from the first file used for the join")
 parser.add_argument("secondkey", help="This is the name of the header from the second file used for the join")
 parser.add_argument("--keepsecondkey", help="Retain the second key rather than the first.", action="store_true")
+parser.add_argument("--rightjoin", help="Retains the CSV from the first join and fills with blanks if there is no join present in the second file", action="store_true")
 parser.add_argument("--firstprefix", default="", help="This is prefix to be used for headers in the first file.")
 parser.add_argument("--secondprefix", default="", help="This is prefix to be used for headers in the second file.")
 parser.add_argument("outputfile", help="This is the output file, where the joined file will be stored.")
@@ -48,15 +50,17 @@ with open(args.firstfile, 'r') as csvfile:
       firstJoin = []
       for i in range(len(row)):
         if not (args.keepsecondkey and i == joinColumnNumber):
-          firstJoin.append(joinKey, '' + row[i])
+          firstJoin.append('' + row[i])
       r.set(joinKey, str(firstJoin))
 outputfile = csv.writer(open(args.outputfile, 'w'))
 
 joinCount = 0
+noJoinCount = 0
 with open(args.secondfile, 'r') as csvfile:
   reader = csv.reader(csvfile)
   first = True
   joinColumnNumber = -1
+  blankrow = []
   for row in reader:
     if first:
       first = False
@@ -73,15 +77,27 @@ with open(args.secondfile, 'r') as csvfile:
         print "There are duplicate headers " + str(duplicates) + " in the output. This won't do. Set a prefix to avoid this. Exiting."
         sys.exit()
       outputfile.writerow(outputheader)
+      for i in range(len(outputheader)):
+        blankrow.append("")
     else:
       secondFileKey = row[joinColumnNumber]
-      if(r.exists(secondFileKey)):
+      goodJoin = r.exists(secondFileKey)
+      if(goodJoin):
         outputRow = ast.literal_eval(r.get(secondFileKey))
-        for i in range(len(row)):
-          if(args.keepsecondkey or i != joinColumnNumber):
-            outputRow.append(row[i])
-        outputfile.writerow(outputRow)
         joinCount = joinCount + 1
+      else:
+        outputRow = copy.copy(blankrow)
+        noJoinCount = noJoinCount + 1
+      for i in range(len(row)):
+        if(args.keepsecondkey or i != joinColumnNumber):
+          outputRow.append(row[i])
+      if(goodJoin or args.rightjoin):
+        outputfile.writerow(outputRow)
+      #  print "No " + args.firstkey + " value found in " + args.firstfile + " with " + args.secondkey + " " + str(secondFileKey)
       
-print "Joined " + str(joinCount) + " records."
+if(args.rightjoin):
+  print "Joined " + str(joinCount) + " records and included " + str(noJoinCount) + " rows that could not be joined."
+else:
+  print "Joined " + str(joinCount) + " records."
 r.flushdb()
+
